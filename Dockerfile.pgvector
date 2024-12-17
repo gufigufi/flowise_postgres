@@ -1,0 +1,17 @@
+# Dockerfile.pgvector
+
+FROM postgres:17
+
+# Установка необходимых пакетов для сборки pgvector
+RUN apt-get update && \
+    apt-get install -y git build-essential postgresql-server-dev-17 && \
+    # Клонирование репозитория pgvector
+    git clone https://github.com/pgvector/pgvector.git && \
+    cd pgvector && \
+    # Сборка и установка pgvector
+    make && make install && \
+    # Очистка
+    cd .. && rm -rf pgvector && \
+    apt-get remove -y git build-essential postgresql-server-dev-17 && \
+    apt-get autoremove -y && \
+    apt-get clean

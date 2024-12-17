@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+    postgres:
+        image: postgres:latest
+        restart: always
+        environment:
+            POSTGRES_DB: flowise
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: mypassword
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+    flowise:
+        image: flowiseai/flowise
+        restart: always
+        environment:
+            - DATABASE_TYPE=postgres
+            - DATABASE_PORT=5432
+            - DATABASE_HOST=postgres
+            - DATABASE_NAME=flowise
+            - DATABASE_USER=root
+            - DATABASE_PASSWORD=mypassword
+            - PORT=3000
+            - APIKEY_PATH=./flowise
+            - SECRETKEY_PATH=./flowise
+            - LOG_PATH=./flowise
+            - BLOB_STORAGE_PATH=./flowise/
+        ports:
+            - "3000:3000"
+        volumes:
+            - ~/.flowise:/root/.flowise
+        depends_on:
+            - postgres
+        entrypoint: /bin/sh -c "sleep 3; flowise start"
+
+volumes:
+    postgres_data:

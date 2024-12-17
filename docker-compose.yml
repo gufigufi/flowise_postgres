@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  postgres:
+    hostname: pgvector_db
+    build:
+      context: .
+      dockerfile: Dockerfile.pgvector
+    image: custom_pgvector:17
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    ports:
+      - "5016:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  flowise:
+    image: flowiseai/flowise
+    restart: always
+    environment:
+      DATABASE_TYPE: postgres
+      DATABASE_PORT: 5432
+      DATABASE_HOST: postgres
+      DATABASE_NAME: flowise
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      PORT: 3000
+      APIKEY_PATH: ./flowise
+      SECRETKEY_PATH: ./flowise
+      LOG_PATH: ./flowise
+      BLOB_STORAGE_PATH: ./flowise/
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./flowise:/root/.flowise
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: /bin/sh -c "sleep 3; flowise start"
+
+volumes:
+  postgres_data:
+  pgadmin_data:
